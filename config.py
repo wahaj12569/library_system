@@ -9,6 +9,9 @@ class Settings:
     DB_USER: str = os.getenv("DB_USER")
     DB_PASSWORD: str = os.getenv("DB_PASSWORD")
     DB_NAME: str = os.getenv("DB_NAME")
+    SECRET_KEY:str = os.getenv("SECRET_KEY")
+    ALGORITHM:str= os.getenv("ALGORITHM")
+    ACCESS_TOKEN_EXPIRE_MINUTES :str = os 
 
     @property
     def database_url(self) -> str:

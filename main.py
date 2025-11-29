@@ -1,13 +1,17 @@
 from fastapi import FastAPI
-from database.database import engine,Base
-from models import user ,books  # Ensure models are imported to register them with SQLAlchemy
+from database.database import Base, engine
+from router.auth import router as auth_router
+from router.books import router as books_router
+from router.borrow import router as borrow_router
 
-
-
-api=FastAPI()
+app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
-@api.get("/")
-def root():
-    return {"message":"Library API Testing"}
+app.include_router(auth_router)
+app.include_router(books_router)
+app.include_router(borrow_router)
+
+@app.get("/")
+def home():
+    return {"message": "Library API Ready!"}

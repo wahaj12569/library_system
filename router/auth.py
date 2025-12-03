@@ -4,47 +4,44 @@ from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
-from database.database import SessionLocal
+from database.database import SessionLocal , get_db
+from schema.auth import SignupRequest , UserResponse,AdminCreateRequest
 from models.user import User
 from utils.token import create_token
+from config import Settings
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+pwd = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-SECRET_KEY = "your-secret-key"
-ALGORITHM = "HS256"
+SECRET_KEY = Settings().SECRET_KEY 
+ALGORITHM = Settings().ALGORITHM
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
+def hash_password(password: str):
+    return pwd.hash(password)
 # -----------------------------
-# SIGNUP
+# SIGNUp
 # -----------------------------
-class SignupRequest(BaseModel):
-    username: str
-    email: str
-    password: str
+
 
 @router.post("/signup")
-def signup(data: SignupRequest, db: Session = Depends(get_db)):
-    exists = db.query(User).filter(User.email == data.email).first()
-    if exists:
+async def signup(data: SignupRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.email).first()
+    if user:
         raise HTTPException(400, "Email already exists")
-
+    hashed_password = hash_password(data.password)
     user = User(
         username=data.username,
+        full_name=data.full_name,
         email=data.email,
-        password=pwd.hash(data.password)
+        password=hashed_password
     )
     db.add(user)
     db.commit()
-    return {"message": "User created"}
+    return UserResponse(id=user.id, username=user.username, email=user.email)
 
 # -----------------------------
 # LOGIN
@@ -73,19 +70,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 @router.get("/me")
 def me(user: User = Depends(get_current_user)):
     return {"id": user.id, "username": user.username, "email": user.email}
-
-# -----------------------------
-# LOGOUT
-# -----------------------------
-@router.post("/logout")
-def logout():
-    return {"message": "Token invalidation is handled on client-side"}
-
 # -----------------------------
 # CREATE ADMIN
 # -----------------------------
 @router.post("/create-admin")
-def create_admin(data: SignupRequest, db: Session = Depends(get_db)):
+def create_admin(data: AdminCreateRequest, db: Session = Depends(get_db)):
     user = User(
         username=data.username,
         email=data.email,

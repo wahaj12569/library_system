@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 from database.database import Base, engine
+from models.user import User
+from models.books import Book
+from models.borrow import Borrow
 from router.auth import router as auth_router
 from router.books import router as books_router
 from router.borrow import router as borrow_router

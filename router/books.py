@@ -1,17 +1,43 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from database.database import SessionLocal
+from database.database import get_db
 from models.books import Book
+from models.user import User
+from schema.book import BookCreate, BookResponse
+from router.auth import get_current_user
 
 router = APIRouter(prefix="/books", tags=["Books"])
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+
+# Create book admin api
+@router.post("/", status_code=201)
+def create_book(data: BookCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Only admin can create books")
+    
+    #Create new book entry
+    new_book = Book(
+        title=data.title,
+        author=data.author,
+        description=data.description,
+        category=data.category,
+        file_path=data.file_path,
+        total_copies=data.total_copies,
+        available_copies=data.available_copies
+
+    )
+    db.add(new_book)
+    db.commit()
+    db.refresh(new_book)
+
+    return BookResponse(
+        id=new_book.id,
+        title=new_book.title,
+        author=new_book.author
+        )
+
+
 
 @router.get("/")
 def get_books(db: Session = Depends(get_db)):

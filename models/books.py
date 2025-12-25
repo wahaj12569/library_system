@@ -9,7 +9,8 @@ class Book(Base):
     author = Column(String)
     category = Column(String)
     description = Column(String)
-    file_path = Column(String)
+    picture_url = Column(String, nullable=True)
+    file_path = Column(String, nullable=True)
     total_copies = Column(Integer, default=1)
     available_copies = Column(Integer, default=1)
 

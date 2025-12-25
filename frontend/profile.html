@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - LibraryHub</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .logo{
+            color: white;
+        }
+        .navbar {
+            background-color:#8b4545;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        #userInfo {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        #profilePicContainer {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        #borrowHistory {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .tab-btn {
+            border: 1px solid #ddd;
+            background: #f7f7f7;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .book-card {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+        button {
+            background: #007bff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #editForm {
+            margin-top: 1rem;
+        }
+        #editForm input {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            width: 100%;
+            max-width: 300px;
+        }
+        .pdf-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+        .pdf-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pdf-container {
+            position: relative;
+            width: 90%;
+            height: 90%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .pdf-header {
+            background: #333;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pdf-close {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .pdf-viewer {
+            width: 100%;
+            height: calc(100% - 60px);
+            border: none;
+            pointer-events: auto;
+        }
+        .pdf-overlay {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .no-select {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">LibraryHub</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>User Profile</h2>
+        <div id="userInfo">
+            <h3>User Information</h3>
+            <p><strong>Username:</strong> <span id="username"></span></p>
+            <p><strong>Full Name:</strong> <span id="fullName"></span></p>
+            <p><strong>Email:</strong> <span id="email"></span></p>
+            <button onclick="toggleEdit()">Edit Profile</button>
+            <div id="editForm" style="display: none;">
+                <label>Full Name: <input type="text" id="editFullName"></label><br>
+                <button onclick="saveProfile()">Save</button>
+                <button onclick="cancelEdit()">Cancel</button>
+            </div>
+        </div>
+
+        <div id="borrowHistory">
+            <h3>Borrowing History</h3>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('active')">Active</button>
+                <button class="tab-btn" onclick="showTab('returned')">Returned</button>
+            </div>
+            <div id="active" class="tab-content active">
+                <div id="activeList"></div>
+            </div>
+            <div id="returned" class="tab-content">
+                <div id="returnedList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div id="pdfModal" class="pdf-modal">
+        <div class="pdf-container no-select">
+            <div class="pdf-header">
+                <h3 id="pdfTitle">PDF Viewer</h3>
+                <button class="pdf-close" onclick="closePDFViewer()">✕ Close</button>
+            </div>
+            <iframe id="pdfViewer" class="pdf-viewer" oncontextmenu="return false;"></iframe>
+            <div class="pdf-overlay"></div>
+        </div>
+    </div>
+
+    <script>
+        // Check if logged in
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/static/login.html';
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('username');
+            window.location.href = '/';
+        }
+
+        // Load user info
+        async function loadUserInfo() {
+            console.log('Loading user info, token:', token);
+            try {
+                const response = await fetch('/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                console.log('Response status:', response.status);
+                if (response.ok) {
+                    const user = await response.json();
+                    console.log('User data:', user);
+                    document.getElementById('username').textContent = user.username;
+                    document.getElementById('fullName').textContent = user.full_name || 'N/A';
+                    document.getElementById('email').textContent = user.email;
+                    // Store for editing
+                    window.currentUser = user;
+                } else {
+                    const errorText = await response.text();
+                    console.error('Failed to load user info:', errorText);
+                    alert('Failed to load user info: ' + errorText);
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                alert('Error loading user info: ' + error.message);
+            }
+        }
+
+        // Load borrowing history
+        async function loadBorrowHistory() {
+            console.log('Loading borrow history');
+            try {
+                const response = await fetch('/borrow/my', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                console.log('Borrow response status:', response.status);
+                if (response.ok) {
+                    const borrows = await response.json();
+                    console.log('Borrow data:', borrows);
+                    renderBorrowLists(borrows);
+                } else {
+                    const errorText = await response.text();
+                    console.error('Failed to load borrowing history:', errorText);
+                    alert('Failed to load borrowing history: ' + errorText);
+                }
+            } catch (error) {
+                console.error('Error loading borrowing history:', error);
+                alert('Error loading borrowing history: ' + error.message);
+            }
+        }
+
+        function renderBorrowLists(borrows) {
+            const activeList = document.getElementById('activeList');
+            const returnedList = document.getElementById('returnedList');
+
+            const active = borrows.filter(b => !b.is_returned && (b.status === 'approved' || b.status === 'pending'));
+            const returned = borrows.filter(b => b.is_returned || b.status === 'rejected');
+
+            activeList.innerHTML = active.length === 0
+                ? '<p>No active requests or borrows.</p>'
+                : active.map(borrow => {
+                    const statusColor = {
+                        'pending': '#ffc107',
+                        'approved': '#28a745'
+                    }[borrow.status] || '#6c757d';
+                    
+                    return `
+                        <div class="book-card">
+                            <h4>${borrow.book.title}</h4>
+                            <p><strong>Author:</strong> ${borrow.book.author}</p>
+                            <p><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${borrow.status.toUpperCase()}</span></p>
+                            ${borrow.requested_borrow_date ? `<p><strong>Requested Borrow:</strong> ${new Date(borrow.requested_borrow_date).toLocaleDateString()}</p>` : ''}
+                            ${borrow.requested_return_date ? `<p><strong>Requested Return:</strong> ${new Date(borrow.requested_return_date).toLocaleDateString()}</p>` : ''}
+                            ${borrow.borrow_date ? `<p><strong>Borrowed on:</strong> ${new Date(borrow.borrow_date).toLocaleDateString()}</p>` : ''}
+                            ${borrow.status === 'approved' ? `
+                                <button onclick="viewPDF(${borrow.book.id})" style="background: #17a2b8; margin-right: 0.5rem;">📖 Read PDF</button>
+                                <button onclick="returnBook(${borrow.book.id})">Return Book</button>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+            returnedList.innerHTML = returned.length === 0
+                ? '<p>No returned or rejected requests.</p>'
+                : returned.map(borrow => {
+                    const statusColor = borrow.status === 'rejected' ? '#dc3545' : '#6c757d';
+                    return `
+                        <div class="book-card">
+                            <h4>${borrow.book.title}</h4>
+                            <p><strong>Author:</strong> ${borrow.book.author}</p>
+                            <p><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${borrow.status.toUpperCase()}</span></p>
+                            ${borrow.requested_borrow_date ? `<p><strong>Requested Borrow:</strong> ${new Date(borrow.requested_borrow_date).toLocaleDateString()}</p>` : ''}
+                            ${borrow.borrow_date ? `<p><strong>Borrowed on:</strong> ${new Date(borrow.borrow_date).toLocaleDateString()}</p>` : ''}
+                            ${borrow.return_date ? `<p><strong>Returned on:</strong> ${new Date(borrow.return_date).toLocaleDateString()}</p>` : ''}
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        async function viewPDF(bookId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please login to view PDFs');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/books/${bookId}/view`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                
+                if (!response.ok) {
+                    const error = await response.text();
+                    alert('Error loading PDF: ' + error);
+                    return;
+                }
+                
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                
+                // Show PDF in modal
+                const pdfModal = document.getElementById('pdfModal');
+                const pdfViewer = document.getElementById('pdfViewer');
+                const pdfTitle = document.getElementById('pdfTitle');
+                
+                // Get book title for display
+                const bookTitle = document.querySelector(`button[onclick="viewPDF(${bookId})"]`)
+                    ?.closest('.book-card')
+                    ?.querySelector('h4')
+                    ?.textContent || 'PDF Viewer';
+                
+                pdfTitle.textContent = bookTitle;
+                pdfViewer.src = url + '#toolbar=0&navpanes=0&scrollbar=0';
+                pdfModal.classList.add('active');
+                
+                // Disable right-click on entire document
+                document.addEventListener('contextmenu', preventContextMenu);
+                
+                // Clean up when closing
+                pdfModal.dataset.blobUrl = url;
+            } catch (error) {
+                console.error('Error viewing PDF:', error);
+                alert('Failed to load PDF: ' + error.message);
+            }
+        }
+
+        function closePDFViewer() {
+            const pdfModal = document.getElementById('pdfModal');
+            const pdfViewer = document.getElementById('pdfViewer');
+            const blobUrl = pdfModal.dataset.blobUrl;
+            
+            pdfModal.classList.remove('active');
+            pdfViewer.src = '';
+            
+            // Clean up blob URL
+            if (blobUrl) {
+                URL.revokeObjectURL(blobUrl);
+                delete pdfModal.dataset.blobUrl;
+            }
+            
+            // Re-enable right-click
+            document.removeEventListener('contextmenu', preventContextMenu);
+        }
+
+        function preventContextMenu(e) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Prevent keyboard shortcuts for downloading/printing
+        document.addEventListener('keydown', function(e) {
+            const pdfModal = document.getElementById('pdfModal');
+            if (pdfModal.classList.contains('active')) {
+                // Prevent Ctrl+S (Save), Ctrl+P (Print)
+                if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('pdfModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePDFViewer();
+            }
+        });
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.textContent.toLowerCase() === tabId);
+            if (targetBtn) targetBtn.classList.add('active');
+        }
+
+        // Return book
+        async function returnBook(bookId) {
+            try {
+                const response = await fetch('/borrow/return', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ book_id: bookId }),
+                });
+                if (response.ok) {
+                    alert('Book returned successfully');
+                    loadBorrowHistory();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.detail);
+                }
+            } catch (error) {
+                console.error('Error returning book:', error);
+            }
+        }
+
+        loadUserInfo();
+        loadBorrowHistory();
+
+        // Edit profile functions
+        function toggleEdit() {
+            const editForm = document.getElementById('editForm');
+            const editFullName = document.getElementById('editFullName');
+            if (editForm.style.display === 'none') {
+                editFullName.value = window.currentUser.full_name || '';
+                editForm.style.display = 'block';
+            } else {
+                editForm.style.display = 'none';
+            }
+        }
+
+        async function saveProfile() {
+            const full_name = document.getElementById('editFullName').value;
+            try {
+                const response = await fetch('/auth/me', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ full_name }),
+                });
+                if (response.ok) {
+                    alert('Profile updated successfully');
+                    loadUserInfo();
+                    toggleEdit();
+                } else {
+                    alert('Failed to update profile');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+            }
+        }
+
+        function cancelEdit() {
+            toggleEdit();
+        }
+    </script>
+</body>
+</html>

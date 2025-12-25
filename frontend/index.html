@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LibraryHub - Discover your next favorite book</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">LibraryHub</div>
+        <div class="nav-links" id="navLinks">
+            <!-- Dynamic nav links -->
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Welcome to LibraryHub</h1>
+        <p>Discover your next favorite book</p>
+        <div class="search-box">
+            <input type="text" placeholder="Search for books, authors, or genres...">
+        </div>
+    </section>
+
+    <div class="container">
+        <h2 class="section-title">Featured Books</h2>
+        <div class="books-grid" id="booksGrid"></div>
+        
+        
+    </div>
+
+    <!-- Book Detail Modal -->
+    <div id="bookModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeBookModal()">&times;</span>
+            <div class="modal-body">
+                <div class="modal-image" id="modalImage"></div>
+                <div class="modal-info">
+                    <h3 id="modalTitle"></h3>
+                    <p id="modalAuthor"></p>
+                    <p id="modalCategory"></p>
+                    <p id="modalDescription"></p>
+                    <p id="modalAvailability"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update nav based on login
+        function updateNav() {
+            const navLinks = document.getElementById('navLinks');
+            const token = localStorage.getItem('token');
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            const username = localStorage.getItem('username');
+            
+            if (token) {
+                navLinks.innerHTML = `
+                    <a href="/static/profile.html">👤 ${username}</a>
+                    ${isAdmin ? '<a href="/static/admin.html">Admin</a>' : ''}
+                    <a href="#" onclick="logout()" class="login-btn">Logout</a>
+                `;
+            } else {
+                navLinks.innerHTML = `
+                    <a href="/static/signup.html">Signup</a>
+                    <a href="/static/login.html" class="login-btn">👤 Login</a>
+                `;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('username');
+            updateNav();
+            loadBooks();
+        }
+
+        // Borrow book - request with dates
+        async function borrowBook(bookId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please login to request books');
+                window.location.href = '/static/login.html';
+                return;
+            }
+
+            // Show date picker dialog
+            const today = new Date().toISOString().split('T')[0];
+            const maxDate = new Date();
+            maxDate.setDate(maxDate.getDate() + 15);
+            const max15Days = maxDate.toISOString().split('T')[0];
+
+            const borrowDate = prompt(`Enter borrow date (YYYY-MM-DD, from today):\nMin: ${today}`);
+            if (!borrowDate) return;
+            
+            const returnDate = prompt(`Enter return date (YYYY-MM-DD, max 15 days from borrow date):\nMax: ${max15Days}`);
+            if (!returnDate) return;
+
+            // Validate dates
+            const borrow = new Date(borrowDate);
+            const returnD = new Date(returnDate);
+            const daysDiff = Math.ceil((returnD - borrow) / (1000 * 60 * 60 * 24));
+
+            if (isNaN(borrow.getTime()) || isNaN(returnD.getTime())) {
+                alert('Invalid date format. Please use YYYY-MM-DD');
+                return;
+            }
+            if (borrow < new Date(today)) {
+                alert('Borrow date cannot be in the past');
+                return;
+            }
+            if (returnD <= borrow) {
+                alert('Return date must be after borrow date');
+                return;
+            }
+            if (daysDiff > 15) {
+                alert('Borrow period cannot exceed 15 days');
+                return;
+            }
+
+            try {
+                const response = await fetch('/borrow/request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ 
+                        book_id: bookId,
+                        requested_borrow_date: borrowDate + 'T00:00:00',
+                        requested_return_date: returnDate + 'T00:00:00'
+                    }),
+                });
+                if (response.ok) {
+                    alert('Borrow request submitted! Admin will review it.');
+                    loadBooks();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + (error.detail || error.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error requesting book:', error);
+                alert('Failed to request book: ' + error.message);
+            }
+        }
+
+
+
+
+
+        // Load books from API
+        async function loadBooks(query = '') {
+            try {
+                const url = query ? `/books/search?query=${encodeURIComponent(query)}` : '/books';
+                const response = await fetch(url);
+                const books = await response.json();
+                const booksGrid = document.getElementById('booksGrid');
+                booksGrid.innerHTML = '';
+                books.forEach(book => {
+                    const rating = 4; // Default rating since not in backend
+                    const stars = '⭐'.repeat(rating);
+                    const status = book.available_copies > 0 ? 'Available' : 'Borrowed';
+                    const statusClass = status === 'Borrowed' ? 'status-borrowed' : 'status-available';
+                    const buttonText = status === 'Borrowed' ? '📋 Unavailable' : '📚 Borrow';
+                    const buttonClass = status === 'Borrowed' ? 'btn-unavailable' : 'btn-borrow';
+                    
+                    const bookCard = document.createElement('div');
+                    bookCard.className = 'book-card';
+                    const imageHtml = book.picture_url ? `<img src="${book.picture_url}" alt="${book.title}" class="book-image">` : '<div class="book-image"></div>';
+                    bookCard.innerHTML = `
+                        ${imageHtml}
+                        <div class="book-info">
+                            <h3 class="book-title">${book.title}</h3>
+                            <p class="book-author">${book.author}</p>
+                            <div class="rating">
+                                <span class="stars">${stars}</span>
+                                <span class="rating-count">(${Math.floor(Math.random() * 500) + 100})</span>
+                            </div>
+                            <p class="book-description">${book.description}</p>
+                            <span class="book-status ${statusClass}">${status}</span>
+                            <div class="book-actions">
+                                <button class="book-btn ${buttonClass}" onclick="borrowBook(${book.id})">${buttonText}</button>
+                                <a href="/static/book-details.html?id=${book.id}" class="book-btn btn-secondary" style="text-decoration: none; display: inline-block; text-align: center; line-height: 1.5;">View Details</a>
+                            </div>
+                        </div>
+                    `;
+                    booksGrid.appendChild(bookCard);
+                });
+            } catch (error) {
+                console.error('Error loading books:', error);
+            }
+        }
+
+        // Book modal handlers
+        async function openBookModal(bookId) {
+            try {
+                const response = await fetch(`/books/${bookId}`);
+                if (!response.ok) throw new Error('Failed to load book');
+                const book = await response.json();
+
+                const imageHtml = book.picture_url
+                    ? `<img src="${book.picture_url}" alt="${book.title}" class="modal-image-el">`
+                    : '<div class="modal-image-placeholder"></div>';
+                document.getElementById('modalImage').innerHTML = imageHtml;
+                document.getElementById('modalTitle').textContent = book.title;
+                document.getElementById('modalAuthor').textContent = `by ${book.author}`;
+                document.getElementById('modalCategory').textContent = book.category ? `Category: ${book.category}` : '';
+                document.getElementById('modalDescription').textContent = book.description || 'No description provided.';
+                document.getElementById('modalAvailability').textContent = `Available: ${book.available_copies}/${book.total_copies}`;
+
+                const statusAvailable = book.available_copies > 0;
+                const borrowBtn = document.getElementById('modalBorrowBtn');
+                borrowBtn.textContent = statusAvailable ? 'Borrow' : 'Unavailable';
+                borrowBtn.disabled = !statusAvailable;
+                borrowBtn.onclick = () => borrowBook(book.id);
+
+                document.getElementById('bookModal').classList.remove('hidden');
+            } catch (err) {
+                console.error('Error opening book modal:', err);
+            }
+        }
+
+        function closeBookModal() {
+            document.getElementById('bookModal').classList.add('hidden');
+        }
+
+        // Search functionality
+        document.querySelector('.search-box input').addEventListener('input', function(e) {
+            loadBooks(e.target.value);
+        });
+
+        updateNav();
+        loadBooks();
+    </script>
+</body>
+</html>

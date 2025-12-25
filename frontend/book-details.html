@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Details - LibraryHub</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .details-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .book-details {
+            background: white;
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 3rem;
+            align-items: start;
+        }
+        .book-detail-image {
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ddd, #ccc);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .book-detail-info h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .book-detail-info .author {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+        .book-detail-info .category {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .book-detail-info .description {
+            margin: 1.5rem 0;
+            line-height: 1.8;
+            color: #555;
+            font-size: 1.05rem;
+        }
+        .availability-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+        .availability-section h3 {
+            margin-bottom: 0.8rem;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        .availability-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .availability-info .label {
+            font-weight: bold;
+            color: #555;
+        }
+        .availability-info .count {
+            font-size: 1.4rem;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .action-buttons button,
+        .action-buttons a {
+            padding: 0.9rem 2.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.05rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .btn-disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .rating {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        .stars {
+            font-size: 1.3rem;
+        }
+        @media (max-width: 768px) {
+            .book-details {
+                grid-template-columns: 1fr;
+            }
+            .book-detail-image {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">LibraryHub</div>
+        <div class="nav-links" id="navLinks">
+            <!-- Dynamic nav links -->
+        </div>
+    </nav>
+
+    <div class="details-container">
+        <div class="book-details">
+            <div>
+                <img id="bookImage" class="book-detail-image" src="" alt="Book cover">
+            </div>
+            <div class="book-detail-info">
+                <h1 id="bookTitle">Loading...</h1>
+                <p class="author" id="bookAuthor"></p>
+                <span class="category" id="bookCategory"></span>
+                <div class="rating">
+                    <span class="stars">⭐⭐⭐⭐</span>
+                    <span class="rating-count">(245 reviews)</span>
+                </div>
+                <p class="description" id="bookDescription"></p>
+                <div class="availability-section">
+                    <h3>Availability Information</h3>
+                    <div class="availability-info">
+                        <span class="label">Available Copies:</span>
+                        <span class="count" id="bookAvailability"></span>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button id="borrowBtn" class="btn-primary" onclick="borrowBook()">Request to Borrow</button>
+                    <a href="/" class="btn-secondary">Back to Library</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentBookId = null;
+
+        // Update nav based on login
+        function updateNav() {
+            const navLinks = document.getElementById('navLinks');
+            const token = localStorage.getItem('token');
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            const username = localStorage.getItem('username');
+            
+            if (token) {
+                navLinks.innerHTML = `
+                    <a href="/static/profile.html">👤 ${username}</a>
+                    ${isAdmin ? '<a href="/static/admin.html">Admin</a>' : ''}
+                    <a href="#" onclick="logout()" class="login-btn">Logout</a>
+                `;
+            } else {
+                navLinks.innerHTML = `
+                    <a href="/static/signup.html">Signup</a>
+                    <a href="/static/login.html" class="login-btn">👤 Login</a>
+                `;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('username');
+            window.location.href = '/';
+        }
+
+        // Get book ID from URL
+        function getBookIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // Load book details
+        async function loadBookDetails() {
+            const bookId = getBookIdFromUrl();
+            if (!bookId) {
+                alert('No book ID provided');
+                window.location.href = '/';
+                return;
+            }
+
+            currentBookId = bookId;
+
+            try {
+                const response = await fetch(`/books/${bookId}`);
+                if (!response.ok) throw new Error('Failed to load book');
+                const book = await response.json();
+
+                // Update page content
+                document.getElementById('bookTitle').textContent = book.title;
+                document.getElementById('bookAuthor').textContent = `by ${book.author}`;
+                document.getElementById('bookCategory').textContent = book.category || 'Uncategorized';
+                document.getElementById('bookCategory').style.display = book.category ? 'inline-block' : 'none';
+                document.getElementById('bookDescription').textContent = book.description || 'No description available.';
+                document.getElementById('bookAvailability').textContent = `${book.available_copies} of ${book.total_copies}`;
+
+                // Update image
+                if (book.picture_url) {
+                    document.getElementById('bookImage').src = book.picture_url;
+                    document.getElementById('bookImage').alt = book.title;
+                }
+
+                // Update borrow button
+                const borrowBtn = document.getElementById('borrowBtn');
+                if (book.available_copies > 0) {
+                    borrowBtn.textContent = 'Request to Borrow';
+                    borrowBtn.className = 'btn-primary';
+                    borrowBtn.disabled = false;
+                } else {
+                    borrowBtn.textContent = 'Currently Unavailable';
+                    borrowBtn.className = 'btn-disabled';
+                    borrowBtn.disabled = true;
+                }
+
+                // Update page title
+                document.title = `${book.title} - LibraryHub`;
+            } catch (error) {
+                console.error('Error loading book details:', error);
+                alert('Failed to load book details');
+                window.location.href = '/';
+            }
+        }
+
+        // Borrow book - request with dates
+        async function borrowBook() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please login to request books');
+                window.location.href = '/static/login.html';
+                return;
+            }
+
+            // Show date picker dialog
+            const today = new Date().toISOString().split('T')[0];
+            const maxDate = new Date();
+            maxDate.setDate(maxDate.getDate() + 15);
+            const max15Days = maxDate.toISOString().split('T')[0];
+
+            const borrowDate = prompt(`Enter borrow date (YYYY-MM-DD, from today):\nMin: ${today}`);
+            if (!borrowDate) return;
+            
+            const returnDate = prompt(`Enter return date (YYYY-MM-DD, max 15 days from borrow date):`);
+            if (!returnDate) return;
+
+            // Validate dates
+            const borrow = new Date(borrowDate);
+            const returnD = new Date(returnDate);
+            const daysDiff = Math.ceil((returnD - borrow) / (1000 * 60 * 60 * 24));
+
+            if (isNaN(borrow.getTime()) || isNaN(returnD.getTime())) {
+                alert('Invalid date format. Please use YYYY-MM-DD');
+                return;
+            }
+            if (borrow < new Date(today)) {
+                alert('Borrow date cannot be in the past');
+                return;
+            }
+            if (returnD <= borrow) {
+                alert('Return date must be after borrow date');
+                return;
+            }
+            if (daysDiff > 15) {
+                alert('Borrow period cannot exceed 15 days');
+                return;
+            }
+
+            try {
+                const response = await fetch('/borrow/request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ 
+                        book_id: parseInt(currentBookId),
+                        requested_borrow_date: borrowDate + 'T00:00:00',
+                        requested_return_date: returnDate + 'T00:00:00'
+                    }),
+                });
+
+                if (response.ok) {
+                    alert('Borrow request submitted! Admin will review it.');
+                    loadBookDetails(); // Refresh to show updated availability
+                } else {
+                    const errorText = await response.text();
+                    let errorMsg = 'Unknown error';
+                    try {
+                        const error = JSON.parse(errorText);
+                        errorMsg = error.detail || error.message || errorText;
+                    } catch (e) {
+                        errorMsg = errorText;
+                    }
+                    alert('Error: ' + errorMsg);
+                }
+            } catch (error) {
+                console.error('Error requesting book:', error);
+                alert('Failed to request book: ' + error.message);
+            }
+        }
+
+        // Initialize page
+        updateNav();
+        loadBookDetails();
+    </script>
+</body>
+</html>

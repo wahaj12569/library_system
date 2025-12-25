@@ -1,0 +1,457 @@
+ * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .navbar {
+            background-color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .logo::before {
+            content: "📚";
+            font-size: 1.8rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .nav-links a:hover {
+            color: #8b4545;
+        }
+
+        .login-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #8b4545 0%, #a85858 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .book-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .book-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #ddd 0%, #ccc 100%);
+        }
+
+        .book-info {
+            padding: 1.5rem;
+        }
+
+        .book-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .book-author {
+            color: #666;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .rating {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stars {
+            color: #f5a623;
+        }
+
+        .rating-count {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .book-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .book-status {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-ebook {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .status-available {
+            background-color: #8b4545;
+            color: white;
+        }
+
+        .status-borrowed {
+            background-color: #999;
+            color: white;
+        }
+
+        .book-btn {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .btn-download {
+            background-color: #8b4545;
+            color: white;
+        }
+
+        .btn-download:hover {
+            opacity: 0.9;
+        }
+
+        .btn-unavailable {
+            background-color: #a89;
+            color: white;
+            cursor: not-allowed;
+        }
+
+        .btn-borrow {
+            background-color: #8b4545;
+            color: white;
+        }
+
+        .btn-borrow:hover {
+            opacity: 0.9;
+        }
+
+/* Login Page Styles */
+.login-container {
+    max-width: 400px;
+    margin: 5rem auto;
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.login-container h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.btn-login, .btn-add {
+    width: 100%;
+    padding: 0.8rem;
+    background-color: #8b4545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.btn-login:hover, .btn-add:hover {
+    opacity: 0.9;
+}
+
+/* Admin Page Styles */
+.book-manage {
+    background: white;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.book-manage h3 {
+    margin: 0;
+    color: #333;
+}
+
+.book-manage p {
+    margin: 0.5rem 0;
+    color: #666;
+}
+
+.book-manage button {
+    margin-left: 1rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.book-manage button:first-of-type {
+    background-color: #f5a623;
+    color: white;
+}
+
+.book-manage button:last-of-type {
+    background-color: #d9534f;
+    color: white;
+}
+
+/* Borrowing History Styles */
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.history-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.history-card h4 {
+    margin-bottom: 0.5rem;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.history-card p {
+    margin: 0.3rem 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.history-card .status-returned {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.history-card .status-borrowed {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.history-card button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+.history-card button:hover {
+    background-color: #0056b3;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    padding: 1.5rem;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modal-body {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 1rem;
+    align-items: center;
+}
+
+.modal-image-el {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+    border-radius: 10px;
+    background: #f0f0f0;
+}
+
+.modal-image-placeholder {
+    width: 100%;
+    height: 320px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ddd, #ccc);
+}
+
+.modal-info h3 {
+    margin-bottom: 0.5rem;
+}
+
+.modal-info p {
+    margin: 0.3rem 0;
+    color: #555;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: #fff;
+}
+
+.book-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.modal-info button {
+    margin-top: 1rem;
+    width: 100%;
+}

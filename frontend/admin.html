@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - LibraryHub</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .navbar {
+            background-color:#8b4545;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .section {
+            background: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .logo{
+            color: white;
+        }
+        button {
+            background: #007bff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0.5rem 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 1rem;
+        }
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab-btn.active {
+            background: white;
+            border-bottom: 2px solid #007bff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal.show {
+            display: block;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-close:hover {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">LibraryHub Admin Panel</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="#" id="logoutBtn">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Admin Dashboard</h1>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('books', event)">Manage Books</button>
+            <button class="tab-btn" onclick="showTab('users', event)">Manage Users</button>
+            <button class="tab-btn" onclick="showTab('pending', event)">Pending Requests</button>
+            <button class="tab-btn" onclick="showTab('borrows', event)">All Borrows</button>
+        </div>
+
+        <div id="books" class="tab-content active">
+            <div class="section">
+                <h2>Add New Book</h2>
+                <form id="addBookForm">
+                    <div class="form-group">
+                        <label for="title">Title:</label>
+                        <input type="text" id="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="author">Author:</label>
+                        <input type="text" id="author" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <textarea id="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category:</label>
+                        <input type="text" id="category">
+                    </div>
+                    <div class="form-group">
+                        <label for="picture_url">Picture URL or Browse:</label>
+                        <input type="text" id="picture_url" placeholder="Enter image URL or browse files below">
+                        <label for="picture_file" style="margin-top: 0.5rem;">Or upload from computer:</label>
+                        <input type="file" id="picture_file" accept="image/*">
+                        <div id="picturePreview" style="margin-top: 1rem; display: none;">
+                            <p><strong>Preview:</strong></p>
+                            <img id="previewImage" src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="pdf_file">PDF File (optional):</label>
+                        <input type="file" id="pdf_file" accept="application/pdf">
+                        <small>Upload a PDF to enable inline viewing</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="total_copies">Total Copies:</label>
+                        <input type="number" id="total_copies" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="available_copies">Available Copies:</label>
+                        <input type="number" id="available_copies" min="0" required>
+                    </div>
+                    <button type="submit">Add Book</button>
+                </form>
+            </div>
+
+            <div class="section">
+                <h2>Existing Books</h2>
+                <table id="booksTable">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Available</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="booksList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="users" class="tab-content">
+            <div class="section">
+                <h2>All Users</h2>
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Full Name</th>
+                            <th>Admin</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="pending" class="tab-content">
+            <div class="section">
+                <h2>Pending Borrow Requests</h2>
+                <table id="pendingTable">
+                    <thead>
+                        <tr>
+                            <th>Book</th>
+                            <th>User</th>
+                            <th>Request Date</th>
+                            <th>Requested Borrow</th>
+                            <th>Requested Return</th>
+                            <th>Days</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="borrows" class="tab-content">
+            <div class="section">
+                <h2>All Borrows</h2>
+                <table id="borrowsTable">
+                    <thead>
+                        <tr>
+                            <th>Book</th>
+                            <th>User</th>
+                            <th>Borrowed On</th>
+                            <th>Returned On</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="borrowsList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Book Modal -->
+    <div id="editBookModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Book</h2>
+            <form id="editBookForm">
+                <div class="form-group">
+                    <label for="edit_title">Title:</label>
+                    <input type="text" id="edit_title" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_author">Author:</label>
+                    <input type="text" id="edit_author" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_description">Description:</label>
+                    <textarea id="edit_description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit_category">Category:</label>
+                    <input type="text" id="edit_category">
+                </div>
+                <div class="form-group">
+                    <label for="edit_picture_url">Picture URL or Browse:</label>
+                    <input type="text" id="edit_picture_url" placeholder="Enter image URL or browse files below">
+                    <label for="edit_picture_file" style="margin-top: 0.5rem;">Or upload from computer:</label>
+                    <input type="file" id="edit_picture_file" accept="image/*">
+                    <div id="editPicturePreview" style="margin-top: 1rem; display: none;">
+                        <p><strong>Preview:</strong></p>
+                        <img id="editPreviewImage" src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 4px;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit_total_copies">Total Copies:</label>
+                    <input type="number" id="edit_total_copies" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_available_copies">Available Copies:</label>
+                    <input type="number" id="edit_available_copies" min="0" required>
+                </div>
+                <button type="submit">Update Book</button>
+                <button type="button" onclick="closeEditModal()" style="background: #6c757d;">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Check if admin
+        const token = localStorage.getItem('token');
+        const isAdmin = localStorage.getItem('isAdmin') === 'true';
+        if (!token || !isAdmin) {
+            window.location.href = '/static/login.html';
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('username');
+            window.location.href = '/';
+        });
+
+        // Tab switching
+        function showTab(tabName, evt) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            const target = evt ? evt.target : null;
+            if (target) target.classList.add('active');
+        }
+
+        // Load books
+        async function loadBooks() {
+            try {
+                const response = await fetch('/books', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                const books = await response.json();
+                const booksList = document.getElementById('booksList');
+                booksList.innerHTML = books.map(book => `
+                    <tr>
+                        <td>${book.title}</td>
+                        <td>${book.author}</td>
+                        <td>${book.available_copies}/${book.total_copies}</td>
+                        <td>
+                            <button onclick="openEditModal(${book.id})" style="background: #28a745; margin-right: 0.5rem;">Edit</button>
+                            <button onclick="deleteBook(${book.id})" class="btn-danger">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading books:', error);
+            }
+        }
+
+        // Add book
+        document.getElementById('addBookForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const author = document.getElementById('author').value;
+            const description = document.getElementById('description').value;
+            const category = document.getElementById('category').value;
+            const picture_url = document.getElementById('picture_url').value;
+            const pdf_file = document.getElementById('pdf_file').files[0];
+            const total_copies = parseInt(document.getElementById('total_copies').value);
+            const available_copies = parseInt(document.getElementById('available_copies').value);
+
+            // Validate copies
+            if (isNaN(total_copies) || total_copies <= 0) {
+                alert('Total copies must be a positive number');
+                return;
+            }
+            if (isNaN(available_copies) || available_copies < 0) {
+                alert('Available copies must be a non-negative number');
+                return;
+            }
+            if (available_copies > total_copies) {
+                alert('Available copies cannot be greater than total copies');
+                return;
+            }
+
+            let file_path = null;
+            if (pdf_file) {
+                const reader = new FileReader();
+                file_path = await new Promise((resolve) => {
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(pdf_file);
+                });
+            }
+
+            console.log('Adding book:', { title, author, description, category, picture_url, file_path: file_path ? 'PDF attached' : 'No PDF', total_copies, available_copies });
+
+            try {
+                const response = await fetch('/books', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        title,
+                        author,
+                        description,
+                        category,
+                        picture_url,
+                        file_path,
+                        total_copies,
+                        available_copies,
+                    }),
+                });
+                console.log('Response status:', response.status);
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+                if (response.ok) {
+                    alert('Book added successfully');
+                    this.reset();
+                    document.getElementById('picturePreview').style.display = 'none';
+                    loadBooks();
+                } else {
+                    alert('Failed to add book: ' + responseText);
+                }
+            } catch (error) {
+                console.error('Error adding book:', error);
+                alert('Error adding book: ' + error.message);
+            }
+        });
+
+        // Delete book
+        async function deleteBook(id) {
+            if (confirm('Are you sure you want to delete this book?')) {
+                try {
+                    const response = await fetch(`/books/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    });
+                    if (response.ok) {
+                        loadBooks();
+                    } else {
+                        alert('Failed to delete book');
+                    }
+                } catch (error) {
+                    console.error('Error deleting book:', error);
+                }
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const response = await fetch('/auth/users', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                const users = await response.json();
+                const usersList = document.getElementById('usersList');
+                usersList.innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td>${user.full_name || 'N/A'}</td>
+                        <td>${user.is_admin ? 'Yes' : 'No'}</td>
+                        <td>
+                            <button onclick="deleteUser(${user.id})" class="btn-danger">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        // Load borrows
+        async function loadBorrows() {
+            try {
+                const response = await fetch('/borrow/all', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                const borrows = await response.json();
+                const borrowsList = document.getElementById('borrowsList');
+                borrowsList.innerHTML = borrows.map(borrow => `
+                    <tr>
+                        <td>${borrow.book.title}</td>
+                        <td>${borrow.user ? borrow.user.username : 'N/A'}</td>
+                        <td>${borrow.borrow_date ? new Date(borrow.borrow_date).toLocaleDateString() : 'Not yet borrowed'}</td>
+                        <td>${borrow.return_date ? new Date(borrow.return_date).toLocaleDateString() : '—'}</td>
+                        <td><span style="padding: 4px 8px; border-radius: 4px; background: ${getStatusColor(borrow.status)}; color: white;">${borrow.status}</span></td>
+                        <td>
+                            ${borrow.status === 'approved' && !borrow.is_returned ? `<button onclick="adminReturn(${borrow.id})">Mark Returned</button>` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading borrows:', error);
+            }
+        }
+
+        // Load pending requests
+        async function loadPendingRequests() {
+            try {
+                const response = await fetch('/borrow/pending', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                const requests = await response.json();
+                const pendingList = document.getElementById('pendingList');
+                pendingList.innerHTML = requests.map(req => {
+                    const days = Math.ceil((new Date(req.requested_return_date) - new Date(req.requested_borrow_date)) / (1000 * 60 * 60 * 24));
+                    return `
+                        <tr>
+                            <td>${req.book.title}</td>
+                            <td>${req.user ? req.user.username : 'N/A'}</td>
+                            <td>${new Date(req.request_date).toLocaleDateString()}</td>
+                            <td>${new Date(req.requested_borrow_date).toLocaleDateString()}</td>
+                            <td>${new Date(req.requested_return_date).toLocaleDateString()}</td>
+                            <td>${days} days</td>
+                            <td>
+                                <button onclick="approveRequest(${req.id}, true)" style="background: #28a745; margin-right: 0.5rem;">Approve</button>
+                                <button onclick="approveRequest(${req.id}, false)" class="btn-danger">Reject</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                if (requests.length === 0) {
+                    pendingList.innerHTML = '<tr><td colspan="7" style="text-align: center;">No pending requests</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading pending requests:', error);
+            }
+        }
+
+        async function approveRequest(borrowId, approve) {
+            try {
+                const response = await fetch('/borrow/approve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ borrow_id: borrowId, approve }),
+                });
+                if (response.ok) {
+                    alert(approve ? 'Request approved!' : 'Request rejected');
+                    loadPendingRequests();
+                    loadBorrows();
+                    loadBooks();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + (error.detail || 'Failed to process request'));
+                }
+            } catch (error) {
+                console.error('Error processing request:', error);
+            }
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'pending': '#ffc107',
+                'approved': '#28a745',
+                'rejected': '#dc3545',
+                'returned': '#6c757d'
+            };
+            return colors[status] || '#6c757d';
+        }
+
+        async function adminReturn(borrowId) {
+            try {
+                const response = await fetch(`/borrow/admin/return/${borrowId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                if (response.ok) {
+                    loadBorrows();
+                    loadBooks();
+                } else {
+                    alert('Failed to mark as returned');
+                }
+            } catch (error) {
+                console.error('Error marking return:', error);
+            }
+        }
+
+        // Delete user
+        async function deleteUser(id) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                try {
+                    const response = await fetch(`/auth/users/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    });
+                    if (response.ok) {
+                        loadUsers();
+                    } else {
+                        alert('Failed to delete user');
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                }
+            }
+        }
+
+        // Load data on page load
+        loadBooks();
+        loadUsers();
+        loadPendingRequests();
+        loadBorrows();
+
+        // Handle picture file upload
+        document.getElementById('picture_file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const dataUrl = event.target.result;
+                    document.getElementById('picture_url').value = dataUrl;
+                    document.getElementById('previewImage').src = dataUrl;
+                    document.getElementById('picturePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Edit book modal functions
+        let currentEditingBookId = null;
+
+        async function openEditModal(bookId) {
+            try {
+                const response = await fetch(`/books/${bookId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                if (!response.ok) throw new Error('Failed to load book');
+                
+                const book = await response.json();
+                currentEditingBookId = bookId;
+
+                document.getElementById('edit_title').value = book.title;
+                document.getElementById('edit_author').value = book.author;
+                document.getElementById('edit_description').value = book.description || '';
+                document.getElementById('edit_category').value = book.category || '';
+                document.getElementById('edit_picture_url').value = book.picture_url || '';
+                document.getElementById('edit_total_copies').value = book.total_copies;
+                document.getElementById('edit_available_copies').value = book.available_copies;
+
+                if (book.picture_url) {
+                    document.getElementById('editPreviewImage').src = book.picture_url;
+                    document.getElementById('editPicturePreview').style.display = 'block';
+                }
+
+                document.getElementById('editBookModal').classList.add('show');
+            } catch (error) {
+                console.error('Error loading book:', error);
+                alert('Failed to load book details');
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editBookModal').classList.remove('show');
+            currentEditingBookId = null;
+            document.getElementById('editBookForm').reset();
+            document.getElementById('editPicturePreview').style.display = 'none';
+        }
+
+        document.getElementById('editBookForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('edit_title').value;
+            const author = document.getElementById('edit_author').value;
+            const description = document.getElementById('edit_description').value;
+            const category = document.getElementById('edit_category').value;
+            const picture_url = document.getElementById('edit_picture_url').value;
+            const total_copies = parseInt(document.getElementById('edit_total_copies').value);
+            const available_copies = parseInt(document.getElementById('edit_available_copies').value);
+
+            // Validate copies
+            if (isNaN(total_copies) || total_copies <= 0) {
+                alert('Total copies must be a positive number');
+                return;
+            }
+            if (isNaN(available_copies) || available_copies < 0) {
+                alert('Available copies must be a non-negative number');
+                return;
+            }
+            if (available_copies > total_copies) {
+                alert('Available copies cannot be greater than total copies');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/books/${currentEditingBookId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        title,
+                        author,
+                        description,
+                        category,
+                        picture_url,
+                        total_copies,
+                        available_copies,
+                    }),
+                });
+
+                if (response.ok) {
+                    alert('Book updated successfully');
+                    closeEditModal();
+                    loadBooks();
+                } else {
+                    const error = await response.json();
+                    alert('Failed to update book: ' + (error.detail || error.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating book:', error);
+                alert('Error updating book: ' + error.message);
+            }
+        });
+
+        // Handle picture file upload in edit modal
+        document.getElementById('edit_picture_file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const dataUrl = event.target.result;
+                    document.getElementById('edit_picture_url').value = dataUrl;
+                    document.getElementById('editPreviewImage').src = dataUrl;
+                    document.getElementById('editPicturePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('editBookModal');
+            if (event.target == modal) {
+                closeEditModal();
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borrow Request - LibraryHub</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .request-container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .request-header {
+            margin-bottom: 1.5rem;
+        }
+        .request-header h1 {
+            margin: 0 0 0.3rem 0;
+            font-size: 2rem;
+        }
+        .request-layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 1.5rem;
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .request-book {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        .request-book img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #ddd, #ccc);
+        }
+        .request-book h3 {
+            margin: 0.8rem 0 0.3rem;
+        }
+        .request-book p {
+            margin: 0.15rem 0;
+            color: #555;
+        }
+        .availability-tag {
+            display: inline-block;
+            margin-top: 0.6rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 14px;
+            background: #007bff;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+        .request-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .request-form label {
+            font-weight: 600;
+            color: #333;
+        }
+        .request-form input[type="date"] {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .request-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        .request-actions button {
+            flex: 1;
+            padding: 0.9rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: #fff;
+        }
+        .btn-primary:hover { background: #0056b3; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
+        .btn-primary:focus { outline: 2px solid #cce0ff; outline-offset: 2px; }
+        .btn-secondary {
+            background: #6c757d;
+            color: #fff;
+        }
+        .btn-secondary:hover { background: #5a6268; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-secondary:focus { outline: 2px solid #e2e3e5; outline-offset: 2px; }
+        @media (max-width: 900px) {
+            .request-layout { grid-template-columns: 1fr; }
+            .request-book img { height: 260px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">LibraryHub</div>
+        <div class="nav-links" id="navLinks">
+            <!-- Dynamic nav links -->
+        </div>
+    </nav>
+
+    <div class="request-container">
+        <div class="request-header">
+            <h1>Borrow Request</h1>
+            <p id="bookTitleLabel">Select your borrow dates (max 15 days).</p>
+        </div>
+        <div class="request-layout">
+            <div class="request-book">
+                <img id="bookImage" src="" alt="Book cover">
+                <h3 id="bookTitle">Loading...</h3>
+                <p id="bookAuthor"></p>
+                <p id="bookCategory"></p>
+                <span class="availability-tag" id="bookAvailability"></span>
+            </div>
+            <form id="borrowForm" class="request-form">
+                <div>
+                    <label for="borrowDate">Borrow date</label>
+                    <input type="date" id="borrowDate" required>
+                </div>
+                <div>
+                    <label for="returnDate">Return date</label>
+                    <input type="date" id="returnDate" required>
+                </div>
+                <div class="request-actions">
+                    <button type="submit" class="btn-primary">Submit request</button>
+                    <button type="button" class="btn-secondary" onclick="goBack()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentBookId = null;
+
+        function updateNav() {
+            const navLinks = document.getElementById('navLinks');
+            const token = localStorage.getItem('token');
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            const username = localStorage.getItem('username');
+            if (token) {
+                navLinks.innerHTML = `
+                    <a href="/static/profile.html">👤 ${username}</a>
+                    ${isAdmin ? '<a href="/static/admin.html">Admin</a>' : ''}
+                    <a href="#" onclick="logout()" class="login-btn">Logout</a>
+                `;
+            } else {
+                navLinks.innerHTML = `
+                    <a href="/static/signup.html">Signup</a>
+                    <a href="/static/login.html" class="login-btn">👤 Login</a>
+                `;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('username');
+            window.location.href = '/';
+        }
+
+        function goBack() {
+            if (currentBookId) {
+                window.location.href = `/static/book-details.html?id=${currentBookId}`;
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        function getBookIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        function formatDateInput(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function addDays(date, days) {
+            const copy = new Date(date);
+            copy.setDate(copy.getDate() + days);
+            return copy;
+        }
+
+        function setReturnDateLimits(borrowDateStr) {
+            const returnDateInput = document.getElementById('returnDate');
+            if (!borrowDateStr) return;
+
+            const borrowDate = new Date(borrowDateStr);
+            const maxDate = addDays(borrowDate, 15);
+            const minStr = formatDateInput(borrowDate);
+            const maxStr = formatDateInput(maxDate);
+
+            returnDateInput.min = minStr;
+            returnDateInput.max = maxStr;
+
+            if (returnDateInput.value && returnDateInput.value < minStr) {
+                returnDateInput.value = minStr;
+            }
+            if (returnDateInput.value && returnDateInput.value > maxStr) {
+                returnDateInput.value = maxStr;
+            }
+        }
+
+        async function loadBook() {
+            const bookId = getBookIdFromUrl();
+            if (!bookId) {
+                alert('No book ID provided');
+                window.location.href = '/';
+                return;
+            }
+
+            currentBookId = parseInt(bookId);
+
+            try {
+                const response = await fetch(`/books/${bookId}`);
+                if (!response.ok) throw new Error('Failed to load book');
+                const book = await response.json();
+
+                document.title = `Request ${book.title} - LibraryHub`;
+                document.getElementById('bookTitle').textContent = book.title;
+                document.getElementById('bookAuthor').textContent = `by ${book.author}`;
+                document.getElementById('bookCategory').textContent = book.category ? `Category: ${book.category}` : '';
+                document.getElementById('bookAvailability').textContent = `Available: ${book.available_copies} / ${book.total_copies}`;
+                document.getElementById('bookTitleLabel').textContent = `Requesting: ${book.title}`;
+
+                if (book.picture_url) {
+                    document.getElementById('bookImage').src = book.picture_url;
+                    document.getElementById('bookImage').alt = book.title;
+                }
+
+                const today = new Date();
+                const todayStr = formatDateInput(today);
+                const borrowDateInput = document.getElementById('borrowDate');
+                const returnDateInput = document.getElementById('returnDate');
+
+                borrowDateInput.min = todayStr;
+                borrowDateInput.value = todayStr;
+                setReturnDateLimits(todayStr);
+
+                const defaultReturn = addDays(today, 7);
+                returnDateInput.value = formatDateInput(defaultReturn);
+            } catch (error) {
+                console.error('Error loading book:', error);
+                alert('Failed to load book details');
+                window.location.href = '/';
+            }
+        }
+
+        async function submitBorrowRequest(event) {
+            event.preventDefault();
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please login to request books');
+                window.location.href = '/static/login.html';
+                return;
+            }
+
+            if (!currentBookId) {
+                alert('No book selected. Please try again.');
+                return;
+            }
+
+            const borrowDate = document.getElementById('borrowDate').value;
+            const returnDate = document.getElementById('returnDate').value;
+
+            if (!borrowDate || !returnDate) {
+                alert('Please select both borrow and return dates');
+                return;
+            }
+
+            const borrow = new Date(borrowDate);
+            const returnD = new Date(returnDate);
+            const daysDiff = Math.ceil((returnD - borrow) / (1000 * 60 * 60 * 24));
+
+            if (returnD <= borrow) {
+                alert('Return date must be after borrow date');
+                return;
+            }
+            if (daysDiff > 15) {
+                alert('Borrow period cannot exceed 15 days');
+                return;
+            }
+
+            try {
+                const response = await fetch('/borrow/request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        book_id: currentBookId,
+                        requested_borrow_date: borrowDate + 'T00:00:00',
+                        requested_return_date: returnDate + 'T00:00:00'
+                    }),
+                });
+
+                if (response.ok) {
+                    alert('Borrow request submitted! Admin will review it.');
+                    window.location.href = `/static/book-details.html?id=${currentBookId}`;
+                } else {
+                    const errorText = await response.text();
+                    let errorMsg = 'Unknown error';
+                    try {
+                        const error = JSON.parse(errorText);
+                        errorMsg = error.detail || error.message || errorText;
+                    } catch (e) {
+                        errorMsg = errorText;
+                    }
+                    alert('Error: ' + errorMsg);
+                }
+            } catch (error) {
+                console.error('Error requesting book:', error);
+                alert('Failed to request book: ' + error.message);
+            }
+        }
+
+        updateNav();
+        loadBook();
+
+        document.getElementById('borrowDate').addEventListener('change', (event) => {
+            setReturnDateLimits(event.target.value);
+        });
+
+        document.getElementById('borrowForm').addEventListener('submit', submitBorrowRequest);
+    </script>
+</body>
+</html>

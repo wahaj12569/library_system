@@ -13,6 +13,23 @@
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: auto;
+            transition: color 0.2s ease;
+        }
+        .close-btn:hover {
+            color: #333;
         }
         .form-group {
             margin-bottom: 1rem;
@@ -43,7 +60,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        button:hover {
+        button:not(.close-btn):hover {
             background: #0056b3;
         }
         .error {
@@ -58,6 +75,7 @@
 </head>
 <body>
     <div class="login-container">
+        <button class="close-btn" onclick="window.location.href='/'">×</button>
         <h2>Login to LibraryHub</h2>
         <form id="loginForm">
             <div class="form-group">

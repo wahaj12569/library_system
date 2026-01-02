@@ -17,8 +17,15 @@
     <section class="hero">
         <h1>Welcome to LibraryHub</h1>
         <p>Discover your next favorite book</p>
-        <div class="search-box">
-            <input type="text" placeholder="Search for books, authors, or genres...">
+        <div class="search-box" style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; max-width: 900px; margin: 0 auto;">
+            <input type="text" id="searchInput" placeholder="Search for books, authors, or genres..." style="flex: 1; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; min-width: 250px;">
+            <button type="button" id="searchBtn" onclick="performSearch()" style="padding: 0.9rem 1.5rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; white-space: nowrap;">🔍 Search</button>
+            <select id="searchCategory" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; background: white; cursor: pointer; white-space: nowrap; min-width: 120px;">
+                <option value="all">All</option>
+                <option value="title">Book Name</option>
+                <option value="author">Author</option>
+                <option value="category">Genre</option>
+            </select>
         </div>
     </section>
 
@@ -43,6 +50,28 @@
                     <p id="modalAvailability"></p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Borrow Request Modal -->
+    <div id="borrowModal" class="modal hidden">
+        <div class="modal-content borrow-modal">
+            <span class="modal-close" onclick="closeBorrowModal()">&times;</span>
+            <h3>Request to Borrow</h3>
+            <p id="borrowBookTitle" class="borrow-modal-book"></p>
+            <p class="borrow-modal-subtitle">Choose your borrow and return dates (max 15 days).</p>
+            <form id="borrowForm" class="borrow-modal-body">
+                <label for="borrowDate">Borrow date</label>
+                <input type="date" id="borrowDate" required>
+
+                <label for="returnDate">Return date</label>
+                <input type="date" id="returnDate" required>
+
+                <div class="modal-actions">
+                    <button type="button" class="book-btn btn-secondary" onclick="closeBorrowModal()">Cancel</button>
+                    <button type="submit" class="book-btn btn-borrow">Submit request</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -76,8 +105,70 @@
             loadBooks();
         }
 
-        // Borrow book - request with dates
-        async function borrowBook(bookId) {
+
+        // Borrow book - request with styled modal
+        const borrowState = { bookId: null };
+
+        function formatDateInput(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function addDays(date, days) {
+            const copy = new Date(date);
+            copy.setDate(copy.getDate() + days);
+            return copy;
+        }
+
+        // Handle borrow click from landing cards
+        function handleBorrowClick(bookId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please login to request books');
+                window.location.href = '/static/login.html';
+                return;
+            }
+            window.location.href = `/static/borrow-request.html?id=${bookId}`;
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const category = document.getElementById('searchCategory').value;
+            
+            if (query === '') {
+                loadBooks('');
+                return;
+            }
+            
+            searchBooks(query, category);
+        }
+
+        function setReturnDateLimits(borrowDateStr) {
+            const returnDateInput = document.getElementById('returnDate');
+            if (!borrowDateStr) return;
+
+            const borrowDate = new Date(borrowDateStr);
+            const maxDate = addDays(borrowDate, 15);
+            const minStr = formatDateInput(borrowDate);
+            const maxStr = formatDateInput(maxDate);
+
+            returnDateInput.min = minStr;
+            returnDateInput.max = maxStr;
+
+            if (returnDateInput.value && returnDateInput.value < minStr) {
+                returnDateInput.value = minStr;
+            }
+            if (returnDateInput.value && returnDateInput.value > maxStr) {
+                returnDateInput.value = maxStr;
+            }
+        }
+
+        function closeBorrowModal() {
+            document.getElementById('borrowModal').classList.add('hidden');
+            document.getElementById('borrowForm').reset();
+            borrowState.bookId = null;
+        }
+
+        function openBorrowModal(bookId, title) {
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('Please login to request books');
@@ -85,31 +176,49 @@
                 return;
             }
 
-            // Show date picker dialog
-            const today = new Date().toISOString().split('T')[0];
-            const maxDate = new Date();
-            maxDate.setDate(maxDate.getDate() + 15);
-            const max15Days = maxDate.toISOString().split('T')[0];
+            borrowState.bookId = bookId;
+            const today = new Date();
+            const todayStr = formatDateInput(today);
+            const borrowDateInput = document.getElementById('borrowDate');
+            const returnDateInput = document.getElementById('returnDate');
 
-            const borrowDate = prompt(`Enter borrow date (YYYY-MM-DD, from today):\nMin: ${today}`);
-            if (!borrowDate) return;
-            
-            const returnDate = prompt(`Enter return date (YYYY-MM-DD, max 15 days from borrow date):\nMax: ${max15Days}`);
-            if (!returnDate) return;
+            borrowDateInput.min = todayStr;
+            borrowDateInput.value = todayStr;
+            setReturnDateLimits(todayStr);
 
-            // Validate dates
+            const defaultReturn = addDays(today, 7);
+            returnDateInput.value = formatDateInput(defaultReturn);
+
+            document.getElementById('borrowBookTitle').textContent = title;
+            document.getElementById('borrowModal').classList.remove('hidden');
+        }
+
+        async function submitBorrowRequest() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please login to request books');
+                window.location.href = '/static/login.html';
+                return;
+            }
+
+            if (!borrowState.bookId) {
+                alert('No book selected. Please try again.');
+                closeBorrowModal();
+                return;
+            }
+
+            const borrowDate = document.getElementById('borrowDate').value;
+            const returnDate = document.getElementById('returnDate').value;
+
+            if (!borrowDate || !returnDate) {
+                alert('Please select both borrow and return dates');
+                return;
+            }
+
             const borrow = new Date(borrowDate);
             const returnD = new Date(returnDate);
             const daysDiff = Math.ceil((returnD - borrow) / (1000 * 60 * 60 * 24));
 
-            if (isNaN(borrow.getTime()) || isNaN(returnD.getTime())) {
-                alert('Invalid date format. Please use YYYY-MM-DD');
-                return;
-            }
-            if (borrow < new Date(today)) {
-                alert('Borrow date cannot be in the past');
-                return;
-            }
             if (returnD <= borrow) {
                 alert('Return date must be after borrow date');
                 return;
@@ -126,14 +235,15 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`,
                     },
-                    body: JSON.stringify({ 
-                        book_id: bookId,
+                    body: JSON.stringify({
+                        book_id: borrowState.bookId,
                         requested_borrow_date: borrowDate + 'T00:00:00',
                         requested_return_date: returnDate + 'T00:00:00'
                     }),
                 });
                 if (response.ok) {
                     alert('Borrow request submitted! Admin will review it.');
+                    closeBorrowModal();
                     loadBooks();
                 } else {
                     const error = await response.json();
@@ -145,6 +255,14 @@
             }
         }
 
+        document.getElementById('borrowDate').addEventListener('change', (event) => {
+            setReturnDateLimits(event.target.value);
+        });
+
+        document.getElementById('borrowForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+            submitBorrowRequest();
+        });
 
 
 
@@ -155,44 +273,69 @@
                 const url = query ? `/books/search?query=${encodeURIComponent(query)}` : '/books';
                 const response = await fetch(url);
                 const books = await response.json();
-                const booksGrid = document.getElementById('booksGrid');
-                booksGrid.innerHTML = '';
-                books.forEach(book => {
-                    const rating = 4; // Default rating since not in backend
-                    const stars = '⭐'.repeat(rating);
-                    const status = book.available_copies > 0 ? 'Available' : 'Borrowed';
-                    const statusClass = status === 'Borrowed' ? 'status-borrowed' : 'status-available';
-                    const buttonText = status === 'Borrowed' ? '📋 Unavailable' : '📚 Borrow';
-                    const buttonClass = status === 'Borrowed' ? 'btn-unavailable' : 'btn-borrow';
-                    
-                    const bookCard = document.createElement('div');
-                    bookCard.className = 'book-card';
-                    const imageHtml = book.picture_url ? `<img src="${book.picture_url}" alt="${book.title}" class="book-image">` : '<div class="book-image"></div>';
-                    bookCard.innerHTML = `
-                        ${imageHtml}
-                        <div class="book-info">
-                            <h3 class="book-title">${book.title}</h3>
-                            <p class="book-author">${book.author}</p>
-                            <div class="rating">
-                                <span class="stars">${stars}</span>
-                                <span class="rating-count">(${Math.floor(Math.random() * 500) + 100})</span>
-                            </div>
-                            <p class="book-description">${book.description}</p>
-                            <span class="book-status ${statusClass}">${status}</span>
-                            <div class="book-actions">
-                                <button class="book-btn ${buttonClass}" onclick="borrowBook(${book.id})">${buttonText}</button>
-                                <a href="/static/book-details.html?id=${book.id}" class="book-btn btn-secondary" style="text-decoration: none; display: inline-block; text-align: center; line-height: 1.5;">View Details</a>
-                            </div>
-                        </div>
-                    `;
-                    booksGrid.appendChild(bookCard);
-                });
+                renderBooks(books);
             } catch (error) {
                 console.error('Error loading books:', error);
             }
         }
 
-        // Book modal handlers
+        // Search books by category
+        async function searchBooks(query, category) {
+            try {
+                let url = '/books';
+                if (query) {
+                    if (category === 'all') {
+                        url = `/books/search?query=${encodeURIComponent(query)}`;
+                    } else {
+                        url = `/books/search?query=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
+                    }
+                }
+                const response = await fetch(url);
+                const books = await response.json();
+                renderBooks(books);
+            } catch (error) {
+                console.error('Error searching books:', error);
+            }
+        }
+
+        // Render books in grid
+        function renderBooks(books) {
+            const booksGrid = document.getElementById('booksGrid');
+            booksGrid.innerHTML = '';
+            books.forEach(book => {
+                const rating = 4;
+                const stars = '⭐'.repeat(rating);
+                const status = book.available_copies > 0 ? 'Available' : 'Borrowed';
+                const statusClass = status === 'Borrowed' ? 'status-borrowed' : 'status-available';
+                const borrowButton = status === 'Borrowed'
+                    ? '<button class="book-btn btn-unavailable" disabled>📋 Unavailable</button>'
+                    : `<button class="book-btn btn-borrow" onclick="handleBorrowClick(${book.id})">📚 Borrow</button>`;
+
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card';
+                const imageHtml = book.picture_url ? `<img src="${book.picture_url}" alt="${book.title}" class="book-image">` : '<div class="book-image"></div>';
+                bookCard.innerHTML = `
+                    ${imageHtml}
+                    <div class="book-info">
+                        <h3 class="book-title">${book.title}</h3>
+                        <p class="book-author">${book.author}</p>
+                        <div class="rating">
+                            <span class="stars">${stars}</span>
+                            <span class="rating-count">(${Math.floor(Math.random() * 500) + 100})</span>
+                        </div>
+                        <p class="book-description">${book.description}</p>
+                        <span class="book-status ${statusClass}">${status}</span>
+                        <div class="book-actions">
+                            ${borrowButton}
+                            <a href="/static/book-details.html?id=${book.id}" class="book-btn btn-secondary" style="text-decoration: none; display: inline-block; text-align: center; line-height: 1.5;">View Details</a>
+                        </div>
+                    </div>
+                `;
+                booksGrid.appendChild(bookCard);
+            });
+        }
+
+        // Book modal handler
         async function openBookModal(bookId) {
             try {
                 const response = await fetch(`/books/${bookId}`);
@@ -211,9 +354,11 @@
 
                 const statusAvailable = book.available_copies > 0;
                 const borrowBtn = document.getElementById('modalBorrowBtn');
-                borrowBtn.textContent = statusAvailable ? 'Borrow' : 'Unavailable';
-                borrowBtn.disabled = !statusAvailable;
-                borrowBtn.onclick = () => borrowBook(book.id);
+                if (borrowBtn) {
+                    borrowBtn.textContent = statusAvailable ? 'Borrow' : 'Unavailable';
+                    borrowBtn.disabled = !statusAvailable;
+                    borrowBtn.onclick = () => openBorrowModal(book.id, book.title);
+                }
 
                 document.getElementById('bookModal').classList.remove('hidden');
             } catch (err) {
@@ -226,8 +371,15 @@
         }
 
         // Search functionality
-        document.querySelector('.search-box input').addEventListener('input', function(e) {
-            loadBooks(e.target.value);
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') performSearch();
+        });
+        
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            // Clear search when input is empty
+            if (e.target.value.trim() === '') {
+                loadBooks('');
+            }
         });
 
         updateNav();

@@ -85,16 +85,6 @@
             border-radius: 8px;
             font-size: 1rem;
         }
-
-        .search-box::before {
-            content: "🔍";
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1.2rem;
-        }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -454,4 +444,47 @@
 .modal-info button {
     margin-top: 1rem;
     width: 100%;
+}
+
+.borrow-modal {
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.borrow-modal-book {
+    color: #8b4545;
+    font-weight: 600;
+}
+
+.borrow-modal-subtitle {
+    color: #555;
+    font-size: 0.95rem;
+}
+
+.borrow-modal-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.borrow-modal-body label {
+    font-weight: 600;
+    color: #333;
+}
+
+.borrow-modal-body input[type="date"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
 }

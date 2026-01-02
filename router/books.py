@@ -51,6 +51,31 @@ def create_book(data: BookCreate, db: Session = Depends(get_db), current_user: d
 def get_books(db: Session = Depends(get_db)):
     return db.query(Book).all()
 
+@router.get("/search")
+def search_books(query: str, category: str = "all", db: Session = Depends(get_db)):
+    """
+    Search books by query and optional category filter.
+    Categories: all, title, author, category
+    """
+    books = db.query(Book)
+    
+    if category == "title":
+        books = books.filter(Book.title.ilike(f"%{query}%"))
+    elif category == "author":
+        books = books.filter(Book.author.ilike(f"%{query}%"))
+    elif category == "category":
+        books = books.filter(Book.category.ilike(f"%{query}%"))
+    else:  # all
+        from sqlalchemy import or_
+        books = books.filter(or_(
+            Book.title.ilike(f"%{query}%"),
+            Book.author.ilike(f"%{query}%"),
+            Book.category.ilike(f"%{query}%"),
+            Book.description.ilike(f"%{query}%")
+        ))
+    
+    return books.all()
+
 @router.delete("/{book_id}")
 def delete_book(book_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     if not current_user.is_admin:
@@ -86,11 +111,6 @@ def update_book(book_id: int, data: BookCreate, db: Session = Depends(get_db), c
     db.refresh(book)
     
     return book
-
-@router.get("/search")
-def search_books(query: str, db: Session = Depends(get_db)):
-    return db.query(Book).filter(Book.title.ilike(f"%{query}%")).all()
-
 
 @router.get("/{book_id}", response_model=BookResponse)
 def get_book(book_id: int, db: Session = Depends(get_db)):

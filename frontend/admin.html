@@ -105,6 +105,24 @@
         .tab-content.active {
             display: block;
         }
+        .subtabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .subtab-btn {
+            padding: 0.45rem 0.9rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .subtab-btn.active {
+            background: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
         .modal {
             display: none;
             position: fixed;
@@ -263,6 +281,12 @@
         <div id="borrows" class="tab-content">
             <div class="section">
                 <h2>All Borrows</h2>
+                <div class="subtabs">
+                    <button class="subtab-btn active" onclick="setBorrowFilter('all', event)">All</button>
+                    <button class="subtab-btn" onclick="setBorrowFilter('approved', event)">Approved</button>
+                    <button class="subtab-btn" onclick="setBorrowFilter('returned', event)">Returned</button>
+                    <button class="subtab-btn" onclick="setBorrowFilter('rejected', event)">Rejected</button>
+                </div>
                 <table id="borrowsTable">
                     <thead>
                         <tr>
@@ -333,6 +357,8 @@
         if (!token || !isAdmin) {
             window.location.href = '/static/login.html';
         }
+
+        let borrowsCache = [];
 
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', function() {
@@ -505,22 +531,42 @@
                     },
                 });
                 const borrows = await response.json();
-                const borrowsList = document.getElementById('borrowsList');
-                borrowsList.innerHTML = borrows.map(borrow => `
-                    <tr>
-                        <td>${borrow.book.title}</td>
-                        <td>${borrow.user ? borrow.user.username : 'N/A'}</td>
-                        <td>${borrow.borrow_date ? new Date(borrow.borrow_date).toLocaleDateString() : 'Not yet borrowed'}</td>
-                        <td>${borrow.return_date ? new Date(borrow.return_date).toLocaleDateString() : '—'}</td>
-                        <td><span style="padding: 4px 8px; border-radius: 4px; background: ${getStatusColor(borrow.status)}; color: white;">${borrow.status}</span></td>
-                        <td>
-                            ${borrow.status === 'approved' && !borrow.is_returned ? `<button onclick="adminReturn(${borrow.id})">Mark Returned</button>` : ''}
-                        </td>
-                    </tr>
-                `).join('');
+                borrowsCache = borrows;
+                renderBorrows('all');
             } catch (error) {
                 console.error('Error loading borrows:', error);
             }
+        }
+
+        function renderBorrows(filterStatus) {
+            const borrowsList = document.getElementById('borrowsList');
+            const filtered = filterStatus === 'all'
+                ? borrowsCache
+                : borrowsCache.filter(b => b.status === filterStatus);
+
+            if (!filtered.length) {
+                borrowsList.innerHTML = '<tr><td colspan="6" style="text-align: center;">No records found</td></tr>';
+                return;
+            }
+
+            borrowsList.innerHTML = filtered.map(borrow => `
+                <tr>
+                    <td>${borrow.book.title}</td>
+                    <td>${borrow.user ? borrow.user.username : 'N/A'}</td>
+                    <td>${borrow.borrow_date ? new Date(borrow.borrow_date).toLocaleDateString() : 'Not yet borrowed'}</td>
+                    <td>${borrow.return_date ? new Date(borrow.return_date).toLocaleDateString() : '—'}</td>
+                    <td><span style="padding: 4px 8px; border-radius: 4px; background: ${getStatusColor(borrow.status)}; color: white;">${borrow.status}</span></td>
+                    <td>
+                        ${borrow.status === 'approved' && !borrow.is_returned ? `<button onclick="adminReturn(${borrow.id})">Mark Returned</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function setBorrowFilter(status, evt) {
+            document.querySelectorAll('.subtab-btn').forEach(btn => btn.classList.remove('active'));
+            if (evt && evt.target) evt.target.classList.add('active');
+            renderBorrows(status);
         }
 
         // Load pending requests
